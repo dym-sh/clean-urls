@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<meta charset="utf8">
+<title>clean-urls</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="viewport"    content="width=device-width">
+
+
+<style>
+* { font-size : 12pt }
+
+body
+{ margin : 0
+; padding : 1em
+}
+
+label
+{ padding : 0.5em 1em 0 0 }
+
+textarea
+{ padding : 1em }
+
+output
+{ padding : 1em
+; line-height : 1.5em
+; background : lightgray
+; white-space : pre
+; display : block
+}
+
+output[type=error]
+{ background : hotpink }
+
+label[disabled]
+, input[disabled]
+{ background : lightgray }
+</style>
+
+
+<label title='no www'>
+  <input
+    type=checkbox
+    name=chk_nowww
+    checked
+  >
+  no www
+</label>
+
+<label title='no final slash'>
+  <input
+    type=checkbox
+    name=chk_nofinalslash
+    checked
+  >
+  no final slash
+</label>
+
+<label title='remove utm_, ref'>
+  <input
+    type=checkbox
+    name=chk_utm
+    checked
+  >
+  ?utm_, ref
+</label>
+
+<label title='only unique'>
+  <input
+    type=checkbox
+    name=chk_uniq
+    checked
+  >
+  uniq
+</label>
+
+<label title='sort'>
+  <input
+    type=checkbox
+    name=chk_sort
+    checked
+  >
+  sort
+</label>
+
+<label title='markdown'
+  id=label_for_chk_markdown
+  >
+  <input
+    onchange='fn_chk_markdown_changed()'
+    type=checkbox
+    name=chk_markdown
+  >
+  markdown
+</label>
+
+<label title='common'
+  id=label_for_chk_common
+  disabled
+  >
+  <input
+    type=checkbox
+    name=chk_common
+    disabled
+  >
+  common .coms
+</label>
+
+<br>
+<textarea
+  rows=10
+  cols=80
+  name=tx_user_input
+  placeholder='enter newline-separated links here'
+>
+</textarea>
+
+
+<br>
+<button onclick='fn_output()'>Clean!</button>
+
+<br>
+<output
+  name=el_errors
+  for=tx_user_input
+  type=error
+>
+</output>
+
+<br>
+<output
+  name=el_output
+  for=tx_user_input
+>
+</output>
+
+<script>
+const d = document
+    , tx_user_input = d.getElementsByName( 'tx_user_input' )[0]
+    , chk_utm = d.getElementsByName( 'chk_utm' )[0]
+    , chk_nowww = d.getElementsByName( 'chk_nowww' )[0]
+    , chk_nofinalslash = d.getElementsByName( 'chk_nofinalslash' )[0]
+    , chk_uniq = d.getElementsByName( 'chk_uniq' )[0]
+    , chk_sort = d.getElementsByName( 'chk_sort' )[0]
+    , chk_markdown = d.getElementsByName( 'chk_markdown' )[0]
+    , chk_common = d.getElementsByName( 'chk_common' )[0]
+
+    , el_output = d.getElementsByName( 'el_output' )[0]
+    , el_errors = d.getElementsByName( 'el_errors' )[0]
+
+let arr_errors = []
+
+// const fn_to_markdown_label = ( s, is_replace_dotcoms = chk_common.checked ) =>
+//   'string' === typeof s
+//   ? s.repalce( /^https?:\/\// , '' )
+//   : s
+   // .replace_k_to_v( arr_replacements )
+
+// fn_output()
+const label_for_chk_markdown = d.getElementById( 'label_for_chk_markdown' )
+    , label_for_chk_common = d.getElementById( 'label_for_chk_common' )
+const fn_chk_markdown_changed = ( ) =>
+  {
+    if( chk_markdown.checked )
+      {
+        chk_common.removeAttribute( 'disabled' )
+        label_for_chk_common.removeAttribute( 'disabled' )
+      }
+    else
+      {
+        chk_common.setAttribute( 'disabled', true )
+        label_for_chk_common.setAttribute( 'disabled', true )
+      }
+
+  }
+
+const fn_output = ( ) =>
+{
+  let arr_strings = tx_user_input.value.split( '\n' )
+    , arr_urls = arr_strings
+        .filter( b => Boolean(b) )
+        .filter( s => {
+          is_url = URL.canParse(s)
+          if( is_url )
+            { return true }
+          else
+            {
+              arr_errors.push(s)
+              return false
+            }
+        } )
+        .map( s => new URL(s) )
+
+  arr_urls.forEach( u => {
+
+    if( chk_nowww.checked )
+      {
+        u.hostname = u.hostname.replace(/^(www\.)+/,'')
+      }
+
+    if( chk_utm.checked )
+      {
+        for( [k,v] of u.searchParams.entries() )
+          {
+            // console.log(`'${k}':'${v}'`)
+            if( /^utm_\w+/.test(k)
+              || /^ref$/i.test(k)
+              )
+            {
+              u.searchParams.delete(k,v)
+            }
+          }
+      }
+  })
+
+  let arr_output = arr_urls
+    .map( u =>
+        ( chk_nofinalslash.checked
+       && ( 1 == u.pathname.length )
+        )
+        ? u.toString().replace( /\/$/ , '' )
+        : u.toString()
+        )
+
+  if( chk_uniq.checked )
+    {
+      arr_output = [... new Set( arr_output ) ]
+    }
+
+  if( chk_sort.checked )
+    {
+      arr_output.sort()
+    }
+
+  if( chk_markdown.checked )
+    {
+      arr_output = arr_output.map( s =>
+        `[${ s.replace( /^https?:\/\// , '' ) }](${s})`
+        )
+    }
+
+  el_errors.textContent = arr_errors.join( '\n' )
+  el_output.textContent = arr_output.join( '\n' )
+}
+
+// const arr_replacements =
+//   [
+// , new RegExp( String.raw`^https?://(www.)?github.com/` ) // github-user
+// , 'gh:'
+// , new RegExp( String.raw`^https?://(www.)?github.com/` ) // github-gist
+// , gist.github.com
+// , new RegExp( String.raw`^https?://(www.)?(twitter.com/|x.com)` ) // twitter-user
+// , tw:
+// , new RegExp( String.raw`^https?://(www.)?instagram.com/` ) // instagram-user
+// , ig:
+// , new RegExp( String.raw`^https?://(www.)?codepen.io/` ) // codepen-user
+// , codepen:
+// , new RegExp( String.raw`^https?://((www.)?youtube.com/watch\?v=|youtu.be/)` )
+// , 'yt:'
+// , new RegExp( String.raw`^https?://(www.)?youtube.com/channel/` ) // youtube-channel
+// , 'yt:ch:'
+// , new RegExp( String.raw`^https?://(www.)?youtube.com/user/` ) // youtube-user
+// , 'yt:u:'
+// , new RegExp( String.raw`^https?://(www.)?youtube.com/c/` ) // youtube-legacy-channel
+// , 'yt:c:'
+// , new RegExp( String.raw`^https?://(www.)?youtube.com/playlist\?list=` ) // youtube-playlist
+// , 'yt:pl:'
+// , new RegExp( String.raw`^https?://((www.)?youtube.com/)` ) // youtube-misc-url
+// , 'yt:/'
+// , new RegExp( String.raw`^https?://(www.)?imdb.com/title/` ) // imdb-title
+// , 'imdb:'
+// , new RegExp( String.raw`^https?://((www|old|new|np).)?reddit.com/(u|user)/` ) // reddit-user
+// , 'r:u:'
+// , new RegExp( String.raw`^https?://((www|old|new|np).)?reddit.com/r/` ) // reddit-sub
+// , 'r:'
+// , new RegExp( String.raw`^https?://((www|old|new|np).)?reddit.com/` ) // reddit-other
+// , 'r:/'
+// , new RegExp( String.raw`^https?://redd.it/` ) // reddit-shortened
+// , 'r:/post/'
+// , new RegExp( String.raw`^https?://(www.)?google.com/search?q=` ) // google-search
+// , 'g:'
+// , new RegExp( String.raw`^https://store.steampowered.com/app/`
+// , 'steam:'
+// , new RegExp( String.raw`^https?://(www.)?pornhub.com/view_video.php\?viewkey=`
+// , 'pornhub:'
+// , new RegExp( String.raw`^https?://(www.)?vk.com`
+// , 'vk:'
+// , new RegExp( String.raw`^https?://(www.)?pixiv.net/en/users/`
+// , 'pixiv:'
+// , new RegExp( String.raw`^https?://(m.)?en.wikipedia.org/wiki/`
+// , 'wiki:'
+
+//   ]
+
+</script>
