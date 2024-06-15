@@ -199,7 +199,6 @@ const fn_output = ( ) =>
         u.pathname = u.pathname
           .replace(/\?$/,'')
           .replace(/index\.html?$/,'')
-          .replace(/\/$/,'')
       }
 
     if( chk_utm.checked )
@@ -234,9 +233,7 @@ const fn_output = ( ) =>
 
   let arr_output = arr_urls
     .map( u =>
-        ( chk_nofinalslash.checked
-       && ( 1 == u.pathname.length )
-        )
+        ( chk_nofinalslash.checked )
         ? u.toString().replace( /\/$/ , '' )
         : u.toString()
         )
