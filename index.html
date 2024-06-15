@@ -193,10 +193,13 @@ const fn_output = ( ) =>
 
     if( chk_nowww.checked )
       {
+        // console.log({ u })
+        u.protocol = 'http'
         u.hostname = u.hostname.replace(/^(www\.)+/,'')
-        u.hostname = u.hostname.replace(/\?$/,'')
-        u.hostname = u.hostname.replace(/index\.html?$/,'')
-        u.hostname = u.hostname.replace(/\/$/,'')
+        u.pathname = u.pathname
+          .replace(/\?$/,'')
+          .replace(/index\.html?$/,'')
+          .replace(/\/$/,'')
       }
 
     if( chk_utm.checked )
