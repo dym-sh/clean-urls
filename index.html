@@ -194,7 +194,25 @@ const fn_output = ( ) =>
     if( chk_nowww.checked )
       {
         u.hostname = u.hostname.replace(/^(www\.)+/,'')
+        u.hostname = u.hostname.replace(/\?$/,'')
+        u.hostname = u.hostname.replace(/index\.html?$/,'')
+        u.hostname = u.hostname.replace(/\/$/,'')
       }
+
+    if( chk_utm.checked )
+      {
+        for( [k,v] of u.searchParams.entries() )
+          {
+            // console.log(`'${k}':'${v}'`)
+            if( /^utm_\w+/.test(k)
+              || /^ref$/i.test(k)
+              )
+            {
+              u.searchParams.delete(k,v)
+            }
+          }
+      }
+
 
     if( chk_utm.checked )
       {
